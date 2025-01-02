@@ -1,16 +1,11 @@
-import pdb
-
-from torch.optim import AdamW
 from dataclasses import dataclass, field
 from utils import *
 from transformers import (
     Trainer,
     TrainingArguments,
-    default_data_collator
+    default_data_collator, Qwen2ForCausalLM, Qwen2Config, AdamW
 )
 from chatglm2tokenizer.tokenization_chatglm import ChatGLMTokenizer
-from chatglm4.modeling_chatglm import ChatGLMForConditionalGeneration
-from chatglm4.configuration_chatglm import ChatGLMConfig
 # 保持使用 ChatGLM 的分词器
 tokenizer = ChatGLMTokenizer.from_pretrained('chatglm2tokenizer/tokenizer.model')
 # 2. 定义训练文件和参数
@@ -30,24 +25,28 @@ class PretrainArguments:
     max_seq_len: int = 512
 
 pretrain_args = PretrainArguments()
-
-# 3. 初始化 DeepseekV3 的配置和模型
-config = ChatGLMConfig.from_pretrained("chatglm4/config.json")
-
-model = ChatGLMForConditionalGeneration(config,empty_init=False).bfloat16().cuda()
+configuration = Qwen2Config(vocab_size=65024,
+        hidden_size=1152,
+        intermediate_size=3172,
+        num_hidden_layers=32,
+        num_attention_heads=18,
+        num_key_value_heads=6,
+        hidden_act="silu",
+        max_position_embeddings=512,
+        tie_word_embeddings=True,
+        rope_theta=10000.0,
+        use_sliding_window=False,
+        sliding_window=4096,
+        max_window_layers=28)
+# Initializing a model from the Qwen2-7B style configuration
+model = Qwen2ForCausalLM(configuration)
 check_and_initialize_parameters(model)
 # 创建训练数据集
 train_dataset = PretrainDataset(pretrain_args.train_files, max_length=pretrain_args.max_seq_len, memmap=True)
 # 打印模型参数数量
-# sample = train_dataset[0]
-# print("Sample数据结构：", sample)
-# decoded_text = tokenizer.decode(sample['input_ids'], skip_special_tokens=True)
-# print("解码后的文本：\n", decoded_text)
 model_size = sum(t.numel() for t in model.parameters())
 print(f"DeepseekV3 size: {model_size / 1024 ** 2:.1f}M parameters")
 # 初始化参数（确保所有参数正确初始化）
-
-
 # 定义自定义的 Trainer 回调（假设你已经定义了 MyTrainerCallback）
 my_trainer_callback = MyTrainerCallback()
 
@@ -60,7 +59,7 @@ args = TrainingArguments(
     num_train_epochs=1,
     save_steps=200,
     # lr_scheduler_type='cosine',
-    # learning_rate=1e-3,
+    # learning_rate=1e-4,
     # optim='adamw_torch',
     save_strategy="steps",
     save_total_limit=2,

@@ -50,7 +50,7 @@ my_trainer_callback = MyTrainerCallback()
 args = TrainingArguments(
     output_dir=pretrain_args.model_save_dir,
     per_device_train_batch_size=8,
-    gradient_accumulation_steps=64,
+    gradient_accumulation_steps=32,
     num_train_epochs=1,
     ddp_find_unused_parameters=False,
     save_steps=200,
@@ -63,7 +63,7 @@ args = TrainingArguments(
 )
 
 # 定义优化器和学习率调度器
-optimizer = AdamW(model.parameters(), lr=4e-4, weight_decay=0.1)
+optimizer = AdamW(model.parameters(), lr=1e-5, weight_decay=0.1)
 total_steps = compute_total_steps(train_dataset, args)
 lr_scheduler = custom_lr_scheduler(optimizer, total_steps)
 

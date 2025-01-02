@@ -126,9 +126,9 @@ def compute_total_steps(train_dataset, training_args):
 
 # 动态计算学习率调度器参数
 def custom_lr_scheduler(optimizer, total_steps):
-    num_warmup_steps = int(total_steps * 0.)   # 预热步数为总步数的 5%
-    num_stable_steps = int(total_steps * 0.3)   # 恒定阶段为总步数的 30%
-    num_decay_steps = int(total_steps * 0.7)    # 衰减阶段为总步数的 60%
+    num_warmup_steps = int(total_steps * 0.05)   # 预热步数为总步数的 5%
+    num_stable_steps = int(total_steps * 0.45)   # 恒定阶段为总步数的 30%
+    num_decay_steps = int(total_steps * 0.5)    # 衰减阶段为总步数的 60%
     print(f"Warmup Steps: {num_warmup_steps}, Stable Steps: {num_stable_steps}, Decay Steps: {num_decay_steps}")
     return get_wsd_schedule(
         optimizer=optimizer,
