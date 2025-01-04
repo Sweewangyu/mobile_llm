@@ -1,3 +1,4 @@
+import pdb
 from dataclasses import dataclass, field
 from utils import *
 from transformers import (
@@ -10,11 +11,23 @@ from chatglm2tokenizer.tokenization_chatglm import ChatGLMTokenizer
 tokenizer = ChatGLMTokenizer.from_pretrained('chatglm2tokenizer/tokenizer.model')
 # 2. 定义训练文件和参数
 TRAIN_FILES = [
-    "/home/wangyu/data/baidubaike/baidubaike_563w_1.bin",
-    "/home/wangyu/data/baidubaike/baidubaike_563w_2.bin",
-    "/home/wangyu/data/baidubaike/baidubaike_563w_3.bin",
-    "/home/wangyu/data/baidubaike/baidubaike_563w_4.bin",
-    "/home/wangyu/data/baidubaike/baidubaike_563w_5.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_0.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_1.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_2.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_3.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_4.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_5.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_6.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_7.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_8.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_9.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_10.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_11.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_12.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_13.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_14.bin",
+    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_15.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_16.bin",
 ]
 
 @dataclass
@@ -26,34 +39,30 @@ class PretrainArguments:
 
 pretrain_args = PretrainArguments()
 configuration = Qwen2Config(vocab_size=65024,
-        hidden_size=1152,
-        intermediate_size=3172,
+        hidden_size=960,
+        intermediate_size=2560,
         num_hidden_layers=32,
-        num_attention_heads=18,
-        num_key_value_heads=6,
+        num_attention_heads=16,
+        num_key_value_heads=2,
         hidden_act="silu",
         max_position_embeddings=512,
         tie_word_embeddings=True,
-        rope_theta=10000.0,
-        use_sliding_window=False,
-        sliding_window=4096,
-        max_window_layers=28)
-# Initializing a model from the Qwen2-7B style configuration
-model = Qwen2ForCausalLM(configuration)
-check_and_initialize_parameters(model)
+        _attn_implementation='flash_attention_2'
+                            )
+model = Qwen2ForCausalLM(configuration).bfloat16()
+# model=Qwen2ForCausalLM.from_pretrained('/home/wangyu/桌面/mobile_llm/model_save/pre/pre_baidubaike')
+# check_and_initialize_parameters(model)
+print(model)
 # 创建训练数据集
 train_dataset = PretrainDataset(pretrain_args.train_files, max_length=pretrain_args.max_seq_len, memmap=True)
 # 打印模型参数数量
 model_size = sum(t.numel() for t in model.parameters())
-print(f"DeepseekV3 size: {model_size / 1024 ** 2:.1f}M parameters")
-# 初始化参数（确保所有参数正确初始化）
-# 定义自定义的 Trainer 回调（假设你已经定义了 MyTrainerCallback）
+print(f" size: {model_size / 1024 ** 2:.1f}M parameters")
 my_trainer_callback = MyTrainerCallback()
-
 # 4. 定义训练参数
 args = TrainingArguments(
     output_dir=pretrain_args.model_save_dir,
-    per_device_train_batch_size=8,
+    per_device_train_batch_size=12,
     gradient_accumulation_steps=32,
     max_grad_norm=1.0 ,
     num_train_epochs=1,
@@ -66,11 +75,11 @@ args = TrainingArguments(
     logging_steps=5,
     log_level="info",
     logging_first_step=True,
-    bf16=True
+    bf16=True,
 )
 
 # # 定义优化器和学习率调度器
-optimizer = AdamW(model.parameters(), lr=1e-4, weight_decay=0.1)
+optimizer = AdamW(model.parameters(), lr=2e-4, weight_decay=0.1)
 total_steps = compute_total_steps(train_dataset, args)
 lr_scheduler = custom_lr_scheduler(optimizer, total_steps)
 
@@ -87,8 +96,9 @@ trainer = Trainer(
 
 # 6. 开始训练
 trainer.train(
-   # resume_from_checkpoint='../../hy-tmp/model_save/pre/checkpoint-1693'  # 可选，断点续训
+   #resume_from_checkpoint='../../hy-tmp/model_save/pre/checkpoint-1693'
 )
-
+eval_results = trainer.evaluate()
+print(f"Perplexity: {np.exp(eval_results['eval_loss']):.2f}")
 # 7. 保存模型
 trainer.save_model(pretrain_args.model_save_dir)
