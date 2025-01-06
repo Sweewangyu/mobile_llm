@@ -84,10 +84,15 @@ def generate_response(model, tokenizer, prompt: str, device: torch.device, max_l
     # 检查 outputs 的类型和内容
     if isinstance(outputs, (tuple, list)):
         generated_ids = outputs[0]
+        print(generated_ids)
     else:
         generated_ids = outputs
 
-    # 解码回复部分
+    # 如果还有多维度，就再取一次
+    if len(generated_ids.shape) > 1:
+        generated_ids = generated_ids[0]
+        print(generated_ids)
+
     generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
     response = generated_text[len(formatted_prompt):].strip()
     return response
@@ -109,7 +114,7 @@ def main():
     parser.add_argument(
         "--max_length",
         type=int,
-        default=512,
+        default=256,
         help="生成回复的最大长度"
     )
     parser.add_argument(

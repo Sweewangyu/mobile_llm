@@ -2,48 +2,48 @@
 本项目致力于在资源受限的端侧设备上部署和运行小型、高效的语言模型（Small Language Model, SLM），以便在移动端或物联网设备上实现自然语言处理功能。
 
 # 0. 环境安装
-以下步骤将帮助快速搭建项目所需环境：
+以下步骤将帮助你快速搭建项目所需环境：
 bash
 复制代码
 conda create -n slm python==3.10
 conda activate slm
 conda install pytorch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install -r requirements.txt
-- 安装flashattention（仅限linux）
-- https://github.com/Dao-AILab/flash-attention/releases
-- 下载好后 
-- pip install +
+安装flashattention（仅限linux）
+https://github.com/Dao-AILab/flash-attention/releases
+下载好后 
+pip install +
 
 
 # 1. 模型结构
-- 本项目的核心模型基于 Qwen2 并参考了 MobileLLM 论文中的结构思想，在保证轻量化的同时兼顾了模型的表现力与推理速度。
+本项目的核心模型基于 Qwen2 并参考了 MobileLLM 论文中的结构思想，在保证轻量化的同时兼顾了模型的表现力与推理速度。
 
 <div align="center"> <img src=":/2e936fa84f25426d9c00e00da21a3cbb" alt="模型结构示意图" width="50%"/> </div>
 图示仅供参考，具体实现可参见源码。
 
 # 2. 数据来源
-- 主数据集：使用 chatglm2-6b 的分词数据进行训练。
-- 参考链接：baby-llama2-chinese
-- 鸣谢：特别感谢开源作者提供的数据与思路。
-- 数据的加载和预处理脚本可在 data/ 目录下找到，你可以根据自己的需求自由定制。
+主数据集：使用 chatglm2-6b 的分词数据进行训练。
+参考链接：baby-llama2-chinese
+鸣谢：特别感谢开源作者提供的数据与思路。
+数据的加载和预处理脚本可在 data/ 目录下找到，你可以根据自己的需求自由定制。
 
 # 3. 训练过程
-- 整个训练流程主要分为以下三个阶段：预训练（Pretrain）、有监督微调（SFT） 与 PPO 调优（RLHF）。
+整个训练流程主要分为以下三个阶段：预训练（Pretrain）、有监督微调（SFT） 与 PPO 调优（RLHF）。
 
 ## 3.1 Pretrain
-- 在预训练阶段，将模型在大规模通用语料上进行训练，以获得基本的语言理解与生成能力：
+在预训练阶段，将模型在大规模通用语料上进行训练，以获得基本的语言理解与生成能力：
 
-- 准备数据：整理并清洗文本数据，根据项目需求进行分词、切分与标注。
-- 训练脚本：运行 scripts/pretrain.sh 或根据你的环境执行相应的指令（参考 scripts/ 目录下的说明）。
-- 注意事项：
-- 确保显存或内存资源充足，如有需要可尝试模型切片或梯度累积等策略。
-- 注意检查训练日志，预防梯度爆炸或过拟合等常见问题。
+准备数据：整理并清洗文本数据，根据项目需求进行分词、切分与标注。
+训练脚本：运行 scripts/pretrain.sh 或根据你的环境执行相应的指令（参考 scripts/ 目录下的说明）。
+注意事项：
+确保显存或内存资源充足，如有需要可尝试模型切片或梯度累积等策略。
+注意检查训练日志，预防梯度爆炸或过拟合等常见问题。
 ## 3.2 SFT（Supervised Fine-Tuning）
-- 在有监督微调阶段，我们主要针对特定任务或数据集进行模型适配与性能提升：
+在有监督微调阶段，我们主要针对特定任务或数据集进行模型适配与性能提升：
 
-- 数据准备：根据目标任务（问答、摘要、对话等）准备带有标签或目标答案的训练数据。
-- 训练脚本：可使用 scripts/sft.sh 内的命令，或在交互式环境下自行指定参数进行训练。
-- 调参建议：可根据任务难度与数据规模，适当调整学习率、批大小以及训练轮次等。
+数据准备：根据目标任务（问答、摘要、对话等）准备带有标签或目标答案的训练数据。
+训练脚本：可使用 scripts/sft.sh 内的命令，或在交互式环境下自行指定参数进行训练。
+调参建议：可根据任务难度与数据规模，适当调整学习率、批大小以及训练轮次等。
 ## 3.3 PPO（RLHF 调优）
 PPO（Proximal Policy Optimization，近端策略优化）是一种在强化学习中被广泛使用的算法，适合对语言模型进行人类偏好反馈（Human Feedback）的训练。
 

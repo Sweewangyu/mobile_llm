@@ -38,7 +38,7 @@ class PretrainArguments:
     max_seq_len: int = 512
 
 pretrain_args = PretrainArguments()
-configuration = Qwen2Config(vocab_size=65024,
+configuration = Qwen2Config(vocab_size=64798,
         hidden_size=960,
         intermediate_size=2560,
         num_hidden_layers=32,
