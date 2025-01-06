@@ -11,22 +11,23 @@ from chatglm2tokenizer.tokenization_chatglm import ChatGLMTokenizer
 tokenizer = ChatGLMTokenizer.from_pretrained('chatglm2tokenizer/tokenizer.model')
 # 2. 定义训练文件和参数
 TRAIN_FILES = [
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_0.bin",
-    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_1.bin",
-    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_2.bin",
-    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_3.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_4.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_5.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_6.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_7.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_8.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_9.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_10.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_11.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_12.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_13.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_14.bin",
-    "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_15.bin",
+    "/home/wangyu/data/baidubaike/baidubaike_563w_1.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_0.bin",
+    # # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_1.bin",
+    # # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_2.bin",
+    # # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_3.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_4.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_5.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_6.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_7.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_8.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_9.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_10.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_11.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_12.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_13.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_14.bin",
+    # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_15.bin",
     # "/home/wangyu/桌面/wudaocorpus_zh/wudaocorpus_zh_16.bin",
 ]
 
@@ -79,7 +80,7 @@ args = TrainingArguments(
 )
 
 # # 定义优化器和学习率调度器
-optimizer = AdamW(model.parameters(), lr=2e-4, weight_decay=0.1)
+optimizer = AdamW(model.parameters(), lr=4e-4, weight_decay=0.1)
 total_steps = compute_total_steps(train_dataset, args)
 lr_scheduler = custom_lr_scheduler(optimizer, total_steps)
 

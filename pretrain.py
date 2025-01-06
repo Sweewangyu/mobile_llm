@@ -7,14 +7,13 @@ from transformers import (
     default_data_collator
 )
 
-# 替换 ChatGLM 的配置、模型导入为 DeepseekV3 的导入
 from deepseekv3.model import DeepseekV3ForCausalLM
-
+from deepseekv3.configuration_deepseek import DeepseekV3Config
 # 保持使用 ChatGLM 的分词器
 
 # 2. 定义训练文件和参数
 TRAIN_FILES = [
-    # "/home/wangyu/data/baidubaike/baidubaike_563w_1.bin",
+    "/home/wangyu/data/baidubaike/baidubaike_563w_1.bin",
     # "/home/wangyu/data/baidubaike/baidubaike_563w_2.bin",
     # "/home/wangyu/data/baidubaike/baidubaike_563w_3.bin",
     # "/home/wangyu/data/baidubaike/baidubaike_563w_4.bin",
@@ -30,9 +29,6 @@ class PretrainArguments:
     max_seq_len: int = 512
 
 pretrain_args = PretrainArguments()
-
-# 3. 初始化 DeepseekV3 的配置和模型
-from deepseekv3.configuration_deepseek import DeepseekV3Config
 config = DeepseekV3Config()
 model = DeepseekV3ForCausalLM(config).bfloat16()
 # 创建训练数据集
@@ -52,7 +48,6 @@ args = TrainingArguments(
     per_device_train_batch_size=8,
     gradient_accumulation_steps=32,
     num_train_epochs=1,
-    ddp_find_unused_parameters=False,
     save_steps=200,
     save_strategy="steps",
     save_total_limit=2,
