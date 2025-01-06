@@ -11,18 +11,15 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from torch.utils.data import Dataset
 from transformers import (
+    DataCollatorForSeq2Seq,
     Trainer,
     TrainingArguments,
-    DataCollatorForSeq2Seq,
+    default_data_collator, Qwen2ForCausalLM, Qwen2Config, AdamW
 )
 # 如果你有自己封装的 MyTrainerCallback，可以进行导入
 # from utils import MyTrainerCallback
 
-# 以下 import 根据你自己的项目结构调整
-from chatglm2tokenizer.configuration_chatglm import ChatGLMConfig
-from chatglm2tokenizer.modeling_chatglm import ChatGLMForConditionalGeneration
 from chatglm2tokenizer.tokenization_chatglm import ChatGLMTokenizer
-
 
 @dataclass
 class SFTArguments:
@@ -87,8 +84,8 @@ class SFTDataset(Dataset):
         user_input = example.get("input", "")
         output = example.get("output", "")
 
-        # 你可以根据对话场景自定义 prompt 的拼接逻辑
-        # 这里仅作简单示例：<instruction + input> -> 需要生成 <output>
+        # 根据对话场景自定义 prompt 的拼接逻辑
+        # 示例：<instruction + input> -> 需要生成 <output>
         if user_input:
             prompt = f"用户：{instruction}\n{user_input}\n\n助手："
         else:
@@ -121,8 +118,6 @@ class SFTDataset(Dataset):
         # 将 prompt 部分标记为 -100，避免计算其 loss，仅对 output 部分计算 loss
         prompt_len = tokenized_prompt["input_ids"].size(1)
         labels[:, :prompt_len] = -100
-        print(attention_mask)
-        pdb.set_trace()
         return {
             "input_ids": input_ids.squeeze(0),
             "attention_mask": attention_mask.squeeze(0),
@@ -135,11 +130,11 @@ def main():
     sft_args = SFTArguments()
 
     # ========== 加载配置、模型、分词器 ==========
-    print("[INFO] Loading ChatGLM config...")
-    config = ChatGLMConfig.from_pretrained(sft_args.model_checkpoint)
+    print("[INFO] Loading llm config...")
+    config = Qwen2Config.from_pretrained(sft_args.model_checkpoint)
 
-    print("[INFO] Loading ChatGLM model from checkpoint...")
-    model = ChatGLMForConditionalGeneration.from_pretrained(
+    print("[INFO] Loading llm model from checkpoint...")
+    model = Qwen2ForCausalLM.from_pretrained(
         sft_args.model_checkpoint,
         config=config,
     )
@@ -151,9 +146,6 @@ def main():
 
     print("[INFO] Loading ChatGLM tokenizer...")
     tokenizer = ChatGLMTokenizer.from_pretrained(sft_args.model_checkpoint)
-
-    # 对于中英文混合，或者有特殊 token，需要根据你的场景对 tokenizer 做额外处理
-    # tokenizer.do_lower_case = True  # 如果你需要小写化之类的
 
     # ========== 准备数据集 ==========
     print("[INFO] Loading SFT dataset...")
@@ -191,9 +183,6 @@ def main():
         eval_strategy="steps" if eval_dataset else "no",
         eval_steps=100 if eval_dataset else None,
         bf16=sft_args.bf16,
-    # 如果你的 GPU 不支持 bfloat16，可以设置 half_precision_backend="auto"
-        # fp16=True,
-        # half_precision_backend="auto",
         report_to=["tensorboard"],
     )
 
@@ -204,7 +193,7 @@ def main():
         eval_dataset=eval_dataset,
         tokenizer=tokenizer,
         data_collator=data_collator,
-        # callbacks=[MyTrainerCallback()]  # 如果有自定义callback
+        # callbacks=[MyTrainerCallback()]
     )
 
     # ========== 开始训练 ==========

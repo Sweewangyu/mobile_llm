@@ -5,8 +5,11 @@ import os
 import torch
 import argparse
 import traceback
-from chatglm2tokenizer.configuration_chatglm import ChatGLMConfig
-from chatglm2tokenizer.modeling_chatglm import ChatGLMForConditionalGeneration
+from transformers import (
+    Trainer,
+    TrainingArguments,
+    default_data_collator, Qwen2ForCausalLM, Qwen2Config, AdamW
+)
 from chatglm2tokenizer.tokenization_chatglm import ChatGLMTokenizer
 
 def load_model(model_path: str, device: torch.device):
@@ -14,15 +17,15 @@ def load_model(model_path: str, device: torch.device):
     加载微调后的模型和分词器。
     """
     print("[INFO] 加载模型配置...")
-    config = ChatGLMConfig.from_pretrained(model_path)
+    config = Qwen2Config.from_pretrained(model_path)
 
     print("[INFO] 加载微调后的模型...")
-    model = ChatGLMForConditionalGeneration.from_pretrained(model_path, config=config)
+    model = Qwen2ForCausalLM.from_pretrained(model_path, config=config)
     model.to(device)
     model.eval()  # 设置为评估模式
 
     print("[INFO] 加载分词器...")
-    tokenizer = ChatGLMTokenizer.from_pretrained(model_path)
+    tokenizer = ChatGLMTokenizer.from_pretrained(r'/home/wangyu/桌面/mobile_llm/chatglm2tokenizer')
 
     # 确保特殊符号已设置
     if tokenizer.eos_token is None:
@@ -95,7 +98,7 @@ def main():
     parser.add_argument(
         "--model_path",
         type=str,
-        default="model_save/sft/checkpoint-799",
+        default="model_save/pre/checkpoint-14400",
         help="微调后模型的保存目录"
     )
     parser.add_argument(

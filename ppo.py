@@ -134,6 +134,60 @@ class PPODataset(Dataset):
 # ============================
 # PPO Loss 定义
 # ============================
+import torch
+import torch.nn.functional as F
+from torch import nn
+
+
+class PPOLoss(nn.Module):
+    def __init__(self, model, ppo_clip: float = 0.2, value_coef=0.5, entropy_coef=0.01):
+        super().__init__()
+        self.model = model
+        self.ppo_clip = ppo_clip
+        self.value_coef = value_coef
+        self.entropy_coef = entropy_coef
+        # 假设 model 同时输出策略与价值，也可以拆成两个网络
+
+    def forward(self, batch):
+        # batch 需要额外包含旧策略log_prob 和 目标价值/回报 或者用于计算GAE的序列
+        input_ids = batch["input_ids"].to(self.model.device)
+        attention_mask = batch["attention_mask"].to(self.model.device)
+        old_log_probs = batch["old_log_probs"].to(self.model.device)  # 旧策略
+        advantages = batch["advantages"].to(self.model.device)
+        returns = batch["returns"].to(self.model.device)  # MC回报或lambda-return
+
+        # 1) 前向传播，拿到新的logits和价值
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        logits = outputs.logits  # [batch_size, seq_len, vocab_size]
+        values = outputs.value  # [batch_size, seq_len] 或 [batch_size] 根据实现方式
+
+        # 2) 计算新策略的 log_prob
+        #   - 如果是 token-level PPO，需要对每一步动作分别 gather
+        #   - 也可能只对最后一个 token gather
+        new_log_probs = F.log_softmax(logits, dim=-1)
+        new_log_probs = new_log_probs.gather(-1, input_ids.unsqueeze(-1)).squeeze(-1)
+
+        # 3) 计算 ratio
+        ratio = torch.exp(new_log_probs - old_log_probs)
+
+        # 4) 计算策略损失 (CLIP)
+        surr1 = ratio * advantages
+        surr2 = torch.clamp(ratio, 1.0 - self.ppo_clip, 1.0 + self.ppo_clip) * advantages
+        policy_loss = -torch.min(surr1, surr2).mean()
+
+        # 5) 计算价值损失
+        #    returns 与 values 维度对齐；如果是 seq-level 需要额外处理
+        value_loss = F.mse_loss(values, returns)
+
+        # 6) 计算熵损失 (鼓励探索)
+        #    先对 logits 做 softmax 再求熵
+        probs = torch.softmax(logits, dim=-1)
+        entropy = -torch.sum(probs * torch.log(probs + 1e-7), dim=-1).mean()
+
+        # 7) 总损失
+        loss = policy_loss + self.value_coef * value_loss - self.entropy_coef * entropy
+        return loss
+
 
 class PPOLoss(torch.nn.Module):
     """
@@ -168,7 +222,6 @@ class PPOLoss(torch.nn.Module):
         policy_loss = -torch.min(surr1, surr2).mean()
 
         # 你可以添加价值函数的损失或熵正则化等，根据需要调整
-
         return policy_loss
 
 # ============================
