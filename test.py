@@ -40,7 +40,6 @@ def load_model(model_path: str, device: torch.device):
     print(f"[INFO] Model vocab size: {model.config.vocab_size}")
 
     return model, tokenizer
-
 def generate_response(model, tokenizer, prompt: str, device: torch.device, max_length: int = 512, temperature: float = 0.7, top_p: float = 0.9):
     """
     生成模型回复。
